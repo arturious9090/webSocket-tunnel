@@ -5,30 +5,6 @@ import WebSocket from 'ws'
 const PORT = 8000
 const WEB_SOCKET_URL = 'ws://localhost:8080'
 
-export class TransferRequestObj {
-    /**
-     * 
-     * @param {string | URL} url 
-     * @param { 'GET' | 'POST' | 'PUT' | 'DELETE'} method 
-     * @param {Headers} headers 
-     * @param {Buffer} body 
-     */
-    constructor(
-        url,
-        method,
-        headers,
-        body
-    ) {
-        this.url = url;
-        this.method = method;
-        this.headers = headers;
-        this.body = body;
-    }
-}
-
-// const tobj = new TransferRequestObj(url, 'GET', { foo: 'bar', bar: 'baz' }, new Buffer.from('hello world!'))
-
-
 async function request(url, method, headers, body) {
     return new Promise((resolve, reject) => {
         const req = http.request(url, { method }, (res) => {

@@ -11,6 +11,8 @@
     "start": "node server.js"
   },
   "dependencies": {
+    "nodemon": "^3.1.14",
+    "uuid": "^14.0.1",
     "ws": "^8.21.1"
   }
 }

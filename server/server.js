@@ -3,8 +3,9 @@ import { createServer } from 'node:http';
 import { v4 as uuidv4 } from 'uuid'
 import * as readLine from 'node:readline/promises'
 import { stdin as input, stdout as output } from 'node:process'
-import { MessageType } from './shared.js';
 import { log } from 'console'
+import { DatabaseSync } from 'node:sqlite';
+import express from 'express'
 
 const WEB_SERVER_PORT = 80
 const WEB_SOCKET_PORT = 8080
@@ -18,7 +19,17 @@ const messagesHandler = (data, wsId) => {
     console.log(wsId, ':', data.toString())
 }
 
-async function main() {
+function createHttpReuest({ method, url, headers, body }) {
+    return {
+        type: 'HTTP_REQUEST',
+        method,
+        url,
+        headers,
+        body: body || null
+    }
+}
+
+function main() {
     const rl = readLine.createInterface({ input, output, prompt: '> ' })
     const wss = new WebSocketServer({ port: WEB_SOCKET_PORT });
     const server = createServer()
@@ -35,18 +46,10 @@ async function main() {
         clientsHosts.set(host, ws.id)
         ws.host = host
 
-        console.log('new ws connection', clientId)
+        console.log('new ws connection', clientId, host)
 
         ws.on('message', (data) => {
-            const messsage = JSON.parse(data.toString())
-            if (messsage.requestType === 'SYSTEM') {
-                if (messsage.request === 'AVALIBLE_HOSTS') {
-                    log('AVALIBLE_HOSTS')
-                    ws.send(new Buffer.from(JSON.stringify(avalibleHosts)))
-                }
-            } else {
-                log('USER')
-            }
+            log(data.toString())
         })
 
         ws.on('close', (code, reason) => {
@@ -56,32 +59,29 @@ async function main() {
         })
     })
 
-    function createHttpReuest({method, url, headers, body}){
-        return {
-            type: MessageType.HTTP_REQUEST,
-            method,
-            url,
-            body: body || null
-        }
-    }
-
-    server.on('request', (req, res) => {
+    server.on('request', async (req, res) => {
+        // Берем хост запроса 
         const host = req.headers.host
+        // Ищем вебсокет для этого хоста
         const ws = clients.get(clientsHosts.get(host))
         if (ws instanceof WebSocket) {
-            const httpRequest = createHttpReuest(req.method, req.url, req.headers, req.body)
+            // Создаем обьект для передачи данных звпроса 
+            const httpRequest = createHttpReuest({ method: req.method, url: req.url, headers: req.headers, body: req.body })
+            // Отправляем вебсокету
             ws.send(new Buffer.from(JSON.stringify(httpRequest)))
-            const httpResponse = new Promise ((resolve, reject )=>{
-                ws.once('message', (data)=>{
+            // Ждем ответа от клиентского вебсокета. 
+            const httpResponse = await new Promise((resolve, reject) => {
+                ws.once('message', (data) => {
                     resolve(JSON.parse(data.toString()))
-                }).once('error', (error)=> {
+                }).once('error', (error) => {
                     reject(error)
                 })
             })
-            await httpResponse
             log(httpResponse)
+        } else {
+            log('ws is not instence of websocket')
+            res.end('error')
         }
-        res.writeHead(200, `{Content-Type: text/plain}`)
         res.end('OK')
     })
 

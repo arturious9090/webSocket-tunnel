@@ -21,22 +21,26 @@ class WebSockerReconnectWrapper {
         this._retryCount = 0
     }
     connect() {
+        // Создаем новый сокет
         const ws = new WebSocket(this.address, this.protocols, this.options)
-        this._ready = new Promise((resolve) => {
-            ws.once('open', () => {
-                for (const [eventName, events] of this._activeListeners.on) {
-                    for (const e of events) {
-                        ws.on(eventName, e) // Сделать коректную обработку одноразовых событий 
-                    }
-                }
-                for (const [eventName, events] of this._activeListeners.once) {
-                    for (const e of events) {
-                        ws.once(eventName, e) // Сделать коректную обработку одноразовых событий 
-                    }
-                }
+        this._ws = ws
+        log(this._activeListeners)
+        // Вешаем обработчики с мертвого сокета 
+        for (const [eventName, events] of this._activeListeners.on) {
+            for (const e of events) {
+                ws.on(eventName, e) // Сделать коректную обработку одноразовых событий 
+            }
+        }
+        for (const [eventName, events] of this._activeListeners.once) {
+            for (const e of events) {
+                ws.once(eventName, e) // Сделать коректную обработку одноразовых событий 
+            }
+        }
+        // ждем открытия сокета 
+        ws.once('open', () => {
+            this._ready = new Promise((resolve) => {
                 log('conected')
                 this._retryCount = 0
-                this._ws = ws
                 resolve()
             })
         })
@@ -73,8 +77,6 @@ class WebSockerReconnectWrapper {
         this._ws.once(event, handler)
     }
 
-
-
     async send(data) {
         await this._ready
         this._ws.send(data)
@@ -86,39 +88,11 @@ async function main() {
     const ws = new WebSockerReconnectWrapper(WEB_SOCKET_URL)
     ws.on('message', (data) => {
         const httpRequest = JSON.parse(data.toString())
-        log(httpRequest)
+        ws.send(new Buffer.from(JSON.stringify({ message: 'Ok' })))
     })
+
+    ws.on('message', (data) => { log(data.toString()) })
 
 }
 
-
-// const url = new URL('http://localhost:8000')
-// const body = new Buffer.from('hello world!!')
-// const headers = new Headers()
-// headers.append('Content-Length', Buffer.byteLength(body))
-
-// socket.on('message', (data) => {
-//     const rdata = JSON.parse(data)
-//     const method = rdata.method
-//     const url = rdata.url
-//     const headers = new Headers()
-//     console.log(url)
-//     for (const h in rdata.headers) {
-//         headers.append(h, rdata.headers[h])
-//     }
-//     const body = rdata.body
-//     const req = http.request('http://localhost:8000' + url, { method }, (res) => {
-//         let data = ''
-//         res.on('data', (chunk) => {
-//             data += chunk
-//         })
-//         res.on('end', () => {
-//             socket.send(data)
-//         })
-//     }).on('error', (err) => {
-//         console.log(err)
-//     })
-//     req.setHeaders(headers)
-//     req.end(body)
-// })
 main()

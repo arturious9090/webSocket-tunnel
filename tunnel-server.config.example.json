@@ -1,0 +1,17 @@
+{
+  "cloudflare": {
+    "apiToken": "YOUR_CLOUDFLARE_API_TOKEN",
+    "zoneId": "YOUR_CLOUDFLARE_ZONE_ID",
+    "proxy": false
+  },
+  "domain": "example.com",
+  "acme": {
+    "email": "admin@example.com",
+    "production": true
+  },
+  "authToken": "YOUR_SHARED_SECRET_TOKEN",
+  "httpsPort": 443,
+  "httpPort": 80,
+  "publicIp": null,
+  "certsDir": "./certs"
+}

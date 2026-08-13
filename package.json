@@ -1,13 +1,17 @@
 {
-  "name": "ws_tunnel",
-  "version": "1.0.0",
-  "description": "",
-  "license": "ISC",
-  "author": "",
+  "name": "ws-tunnel",
+  "version": "0.1.0",
+  "description": "WebSocket HTTP tunnel (Cloudflare Tunnel alternative) with automatic Let's Encrypt wildcard certificates",
+  "license": "MIT",
   "type": "module",
-  "main": "client.js",
+  "private": true,
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "backend": "node http_server.js",
+    "server": "node packages/server/bin/tunnel-server.js",
+    "client": "node packages/client/bin/tunnel-client.js"
   }
 }

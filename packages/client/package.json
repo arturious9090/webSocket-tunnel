@@ -1,0 +1,18 @@
+{
+  "name": "@ws-tunnel/client",
+  "version": "0.1.0",
+  "description": "Local tunnel client that forwards traffic from the public server to a local port",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "tunnel-client": "./bin/tunnel-client.js"
+  },
+  "main": "src/tunnel.js",
+  "scripts": {
+    "start": "node bin/tunnel-client.js"
+  },
+  "dependencies": {
+    "@ws-tunnel/protocol": "0.1.0",
+    "ws": "^8.21.3"
+  }
+}

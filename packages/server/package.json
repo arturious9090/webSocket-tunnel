@@ -1,0 +1,19 @@
+{
+  "name": "@ws-tunnel/server",
+  "version": "0.1.0",
+  "description": "Public tunnel server with automatic Let's Encrypt wildcard certificates via Cloudflare DNS",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "tunnel-server": "./bin/tunnel-server.js"
+  },
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node bin/tunnel-server.js"
+  },
+  "dependencies": {
+    "@ws-tunnel/protocol": "0.1.0",
+    "acme-client": "^5.4.0",
+    "ws": "^8.21.3"
+  }
+}

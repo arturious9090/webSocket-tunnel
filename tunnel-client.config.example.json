@@ -1,0 +1,9 @@
+{
+  "server": "tunnel.example.com",
+  "token": "YOUR_SHARED_SECRET_TOKEN",
+  "subdomain": "app",
+  "localHost": "localhost",
+  "port": 3000,
+  "maxRetries": 50,
+  "retryTime": 500
+}

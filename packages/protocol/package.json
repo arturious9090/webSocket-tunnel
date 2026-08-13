@@ -1,0 +1,11 @@
+{
+  "name": "@ws-tunnel/protocol",
+  "version": "0.1.0",
+  "description": "Shared protocol types and constants for ws-tunnel server and client",
+  "license": "MIT",
+  "type": "module",
+  "main": "src/index.js",
+  "exports": {
+    ".": "./src/index.js"
+  }
+}

@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Тестовая страница</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f4f4f4;
+      color: #222;
+      display: grid;
+      place-items: center;
+      min-height: 100vh;
+    }
+    .card {
+      width: min(90%, 600px);
+      padding: 40px;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,.1);
+      text-align: center;
+    }
+    h1 { margin-top: 0; }
+    button {
+      border: 0;
+      padding: 12px 20px;
+      border-radius: 8px;
+      background: #222;
+      color: white;
+      cursor: pointer;
+      font-size: 16px;
+    }
+    button:hover { opacity: .85; }
+    #result { margin-top: 20px; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <h1>Привет 👋</h1>
+    <p>Это простая HTML-страница для проверки.</p>
+    <button onclick="testPage()">Нажми меня</button>
+    <div id="result"></div>
+  </main>
+
+  <script>
+    function testPage() {
+      document.getElementById("result").textContent =
+        "Работает! HTML, CSS и JavaScript загружены.";
+    }
+  </script>
+</body>
+</html>

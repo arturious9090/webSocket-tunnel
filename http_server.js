@@ -1,35 +1,24 @@
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
 
-const PORT = Number(process.env.LOCAL_HTTP_PORT || 8000);
+const PORT = 3000;
 
-const server = createServer();
-
-server.on('request', (req, res) => {
+const server = createServer((req, res) => {
   console.log('new', req.method, 'request on', req.url);
 
-  const chunks = [];
-  req.on('data', (chunk) => chunks.push(chunk));
-  req.on('end', () => {
-    const body = Buffer.concat(chunks).toString();
-
-    const response = JSON.stringify(
-      {
-        message: 'OKey',
-        method: req.method,
-        url: req.url,
-        headers: req.headers,
-        body: body || null,
-      },
-      null,
-      2,
-    );
+  try {
+    const response = readFileSync('./test_page.html');
 
     res.writeHead(200, {
-      'Content-Type': 'application/json',
+      'Content-Type': 'text/html; charset=utf-8',
+      'Content-Length': response.length,
       'system-header': 'systemInfo',
     });
     res.end(response);
-  });
+  } catch {
+    res.writeHead(500, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('Internal Server Error');
+  }
 });
 
 server.listen(PORT, () => {

@@ -1,0 +1,41 @@
+
+Убрать енв файл, конфигураци только через джсон. 
+
+Сервер не запускается через npm run server с ошибкой:
+artur@homeserv:~/Git/webSocket-tunnel$ npm run server
+
+> ws-tunnel@0.1.0 server
+> npm run start --workspace @ws-tunnel/server
+
+
+> @ws-tunnel/server@0.1.0 start
+> node bin/tunnel-server.js
+
+[public-ip] detected public IP: 38.137.251.7
+[2026-08-17T09:48:33.544Z] [INFO] [server] ensuring wildcard A record *.my-websocket-tunnel.pp.ua -> 38.137.251.7
+[tunnel-server] fatal error: Authentication error
+npm error Lifecycle script `start` failed with error:
+npm error code 1
+npm error path /home/artur/Git/webSocket-tunnel/packages/server
+npm error workspace @ws-tunnel/server@0.1.0
+npm error location /home/artur/Git/webSocket-tunnel/packages/server
+npm error command failed
+npm error command sh -c node bin/tunnel-server.js
+
+клиента нельзя запустить просто из командной строки, пишет команда не найдена или типо того. 
+
+починить ошибки типа: 
+file:///C:/Users/sefer/Desktop/GitHub/webSocket-tunnel/packages/client/src/local-forward.js:87
+      log('local request failed:', error.message);
+      ^
+
+TypeError: log is not a function
+
+лог это обьект в котором функции 
+
+Переработать добавления конфига. Мне оно не нравится, приходится вставлять полный путь.
+Возможно оставить только один конфиг и не справшивать его перед запуском брать этот конфиг по умолчанию а все другое через флаги.
+
+Протестировать, проверить безопасность и закрыть все возможные дыры. 
+
+Закончить публикацию на нпм.

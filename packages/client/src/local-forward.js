@@ -1,24 +1,38 @@
 import http from 'node:http';
-import { createHttpResponse, filterHeaders } from '@ws-tunnel/protocol';
+import {
+  createHttpResponse,
+  createHttpResponseStart,
+  createHttpResponseChunk,
+  createHttpResponseEnd,
+  filterHeaders,
+} from '@ws-tunnel/protocol';
 
 export function createLocalForwarder({ host, port, log = console.log }) {
-  function forwardRequestToLocal(httpRequest) {
+  function buildOptions(httpRequest) {
     const { method, url, headers, body, bodyEncoding } = httpRequest;
-
     const requestBody = body
       ? Buffer.from(body, bodyEncoding || 'utf8')
       : null;
 
-    const options = {
-      host,
-      port,
-      path: url,
-      method,
-      headers: {
-        ...filterHeaders(headers),
-        ...(requestBody ? { 'content-length': requestBody.length } : {}),
+    return {
+      options: {
+        host,
+        port,
+        path: url,
+        method,
+        headers: {
+          ...filterHeaders(headers),
+          ...(requestBody ? { 'content-length': requestBody.length } : {}),
+        },
       },
+      requestBody,
     };
+  }
+
+  // Single-shot forwarder (buffers the whole response). Kept for protocol
+  // compatibility with servers that only understand HTTP_RESPONSE.
+  function forwardRequestToLocal(httpRequest) {
+    const { options, requestBody } = buildOptions(httpRequest);
 
     return new Promise((resolve) => {
       const req = http.request(options, (res) => {
@@ -58,5 +72,34 @@ export function createLocalForwarder({ host, port, log = console.log }) {
     });
   }
 
-  return { forwardRequestToLocal };
+  // Streaming forwarder: emits a start event for headers, a chunk event for
+  // each body chunk, and an end event when the response finishes.
+  function forwardRequestToLocalStream(httpRequest, events) {
+    const { options, requestBody } = buildOptions(httpRequest);
+
+    const req = http.request(options, (res) => {
+      events.onStart?.(res.statusCode || 200, filterHeaders(res.headers));
+      res.on('data', (chunk) => events.onChunk?.(chunk));
+      res.on('end', () => events.onEnd?.());
+    });
+
+    req.on('error', (error) => {
+      log('local request failed:', error.message);
+      events.onError?.(error);
+    });
+
+    if (requestBody) {
+      req.write(requestBody);
+    }
+    req.end();
+  }
+
+  return { forwardRequestToLocal, forwardRequestToLocalStream };
 }
+
+export {
+  createHttpResponse,
+  createHttpResponseStart,
+  createHttpResponseChunk,
+  createHttpResponseEnd,
+};

@@ -1,0 +1,19 @@
+# Public tunnel server image.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install production dependencies using workspaces.
+COPY package.json package-lock.json ./
+COPY packages/protocol/package.json packages/protocol/package.json
+COPY packages/server/package.json packages/server/package.json
+RUN npm ci --omit=dev --workspace @ws-tunnel/server --workspace @ws-tunnel/protocol
+
+COPY packages/protocol packages/protocol
+COPY packages/server packages/server
+
+ENV NODE_ENV=production
+
+EXPOSE 80 443
+
+CMD ["node", "packages/server/bin/tunnel-server.js"]

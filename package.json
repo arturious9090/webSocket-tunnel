@@ -5,13 +5,16 @@
   "license": "MIT",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=18"
+  },
   "workspaces": [
     "packages/*"
   ],
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "backend": "node http_server.js",
-    "server": "node packages/server/bin/tunnel-server.js",
-    "client": "node packages/client/bin/tunnel-client.js"
+    "test": "node --test \"packages/**/test/**/*.test.js\"",
+    "backend": "node examples/http_server.js",
+    "server": "npm run start --workspace @ws-tunnel/server",
+    "client": "npm run start --workspace @ws-tunnel/client"
   }
 }

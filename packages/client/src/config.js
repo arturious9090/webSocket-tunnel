@@ -80,18 +80,28 @@ function toNumber(value, fallback) {
 export class ConfigError extends Error {}
 
 export function loadClientConfig(argv = process.argv.slice(2)) {
-  const { args } = parseArgs(argv);
+  const { args, positional } = parseArgs(argv);
 
   const configPath = args.config || args.c || env('TUNNEL_CONFIG') || DEFAULT_CONFIG_PATH;
   const file = readConfigFile(configPath);
 
-  const server = args.server || env('TUNNEL_SERVER') || file.server;
-  const token = args.token || env('TUNNEL_AUTH_TOKEN') || file.token;
+  const positionalPort = positional.find((value) => /^\d+$/.test(value));
+
+  const server = args.server || args.s || env('TUNNEL_SERVER') || file.server;
+  const token = args.token || args.t || env('TUNNEL_AUTH_TOKEN') || file.token;
   const subdomain = args.subdomain || args.host || env('TUNNEL_SUBDOMAIN') || file.subdomain || null;
   const localHost = args['local-host'] || env('LOCAL_HTTP_HOST') || file.localHost || 'localhost';
-  const localPort = toNumber(args.port || env('LOCAL_HTTP_PORT') || file.port, 8000);
+  const localPort = toNumber(args.port || args.p || positionalPort || env('LOCAL_HTTP_PORT') || file.port, 3000);
   const maxRetries = toNumber(args['max-retries'] || env('MAX_RETRIES') || file.maxRetries, 50);
-  const retryTime = toNumber(args['retry-time'] || env('RETRY_TIME') || file.retryTime, 500);
+  const legacyRetryTime = toNumber(args['retry-time'] || env('RETRY_TIME') || file.retryTime, null);
+  const retryMinDelayMs = toNumber(
+    args['retry-min-delay'] || env('RETRY_MIN_DELAY') || file.retryMinDelayMs || legacyRetryTime,
+    500,
+  );
+  const retryMaxDelayMs = toNumber(
+    args['retry-max-delay'] || env('RETRY_MAX_DELAY') || file.retryMaxDelayMs,
+    Math.max(retryMinDelayMs, 30_000),
+  );
 
   const errors = [];
   if (!server) {
@@ -112,7 +122,8 @@ export function loadClientConfig(argv = process.argv.slice(2)) {
     localHost,
     localPort,
     maxRetries,
-    retryTime,
+    retryMinDelayMs,
+    retryMaxDelayMs,
     configPath,
   };
 }

@@ -1,5 +1,17 @@
 import WebSocket from 'ws';
-import { TUNNEL_PATH, MESSAGE_TYPES, createRegisterMessage, createPongMessage } from '@ws-tunnel/protocol';
+import {
+  TUNNEL_PATH,
+  MESSAGE_TYPES,
+  createRegisterMessage,
+  createPongMessage,
+} from '@ws-tunnel/protocol';
+import { createLogger } from '@ws-tunnel/protocol/logger.js';
+import {
+  createHttpResponse,
+  createHttpResponseStart,
+  createHttpResponseChunk,
+  createHttpResponseEnd,
+} from './local-forward.js';
 import { createLocalForwarder } from './local-forward.js';
 
 function buildServerUrl(server) {
@@ -19,7 +31,7 @@ function ensureTunnelPath(urlString) {
 }
 
 export async function startTunnel(config) {
-  const log = (...args) => console.log('[client]', ...args);
+  const log = createLogger('client');
 
   const base = buildServerUrl(config.server);
   const serverUrl = ensureTunnelPath(base);
@@ -34,6 +46,16 @@ export async function startTunnel(config) {
   let shouldReconnect = true;
   let currentWs = null;
 
+  function computeDelay(attempt) {
+    const min = Math.max(0, config.retryMinDelayMs || 500);
+    const max = Math.max(min, config.retryMaxDelayMs || 30_000);
+    const exponential = min * 2 ** (attempt - 1);
+    const capped = Math.min(exponential, max);
+    // Add ±20% jitter to avoid thundering herd on the server.
+    const jitter = capped * 0.2 * (Math.random() * 2 - 1);
+    return Math.round(capped + jitter);
+  }
+
   function scheduleReconnect() {
     if (!shouldReconnect) {
       return;
@@ -43,9 +65,49 @@ export async function startTunnel(config) {
       return;
     }
     retryCount += 1;
-    const delay = config.retryTime;
+    const delay = computeDelay(retryCount);
     log(`reconnecting in ${delay}ms (attempt ${retryCount}/${config.maxRetries})`);
     setTimeout(connect, delay);
+  }
+
+  function sendJsonOverWs(ws, message) {
+    if (ws.readyState === WebSocket.OPEN) {
+      ws.send(JSON.stringify(message));
+    }
+  }
+
+  function handleHttpRequestStreaming(ws, message) {
+    forwarder.forwardRequestToLocalStream(message, {
+      onStart(status, headers) {
+        sendJsonOverWs(ws, createHttpResponseStart({ id: message.id, status, headers }));
+      },
+      onChunk(chunk) {
+        sendJsonOverWs(
+          ws,
+          createHttpResponseChunk({
+            id: message.id,
+            body: chunk.length ? chunk.toString('base64') : null,
+            bodyEncoding: 'base64',
+          }),
+        );
+      },
+      onEnd() {
+        sendJsonOverWs(ws, createHttpResponseEnd({ id: message.id }));
+      },
+      onError(error) {
+        log('local streaming request failed:', error.message);
+        sendJsonOverWs(ws, createHttpResponseStart({ id: message.id, status: 502, headers: { 'Content-Type': 'text/plain' } }));
+        sendJsonOverWs(
+          ws,
+          createHttpResponseChunk({
+            id: message.id,
+            body: Buffer.from('local request failed: ' + error.message).toString('base64'),
+            bodyEncoding: 'base64',
+          }),
+        );
+        sendJsonOverWs(ws, createHttpResponseEnd({ id: message.id }));
+      },
+    });
   }
 
   async function connect() {
@@ -78,6 +140,8 @@ export async function startTunnel(config) {
 
       if (message.type === MESSAGE_TYPES.READY) {
         log('tunnel ready:', message.host);
+        log(`public URL: https://${message.host}`);
+        log(`forwarding to http://${config.localHost}:${config.localPort}`);
         return;
       }
 
@@ -99,10 +163,7 @@ export async function startTunnel(config) {
 
       if (message.type === MESSAGE_TYPES.HTTP_REQUEST) {
         log('received HTTP_REQUEST', message.id, message.method, message.url);
-        const response = await forwarder.forwardRequestToLocal(message);
-        if (ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify(response));
-        }
+        handleHttpRequestStreaming(ws, message);
         return;
       }
 

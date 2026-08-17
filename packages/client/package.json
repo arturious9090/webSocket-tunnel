@@ -8,6 +8,21 @@
     "tunnel-client": "./bin/tunnel-client.js"
   },
   "main": "src/tunnel.js",
+  "files": [
+    "bin",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arturious9090/webSocket-tunnel.git"
+  },
+  "keywords": [
+    "tunnel",
+    "websocket",
+    "reverse-proxy",
+    "ngrok",
+    "localhost"
+  ],
   "scripts": {
     "start": "node bin/tunnel-client.js"
   },

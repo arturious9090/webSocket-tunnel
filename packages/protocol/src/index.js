@@ -8,6 +8,9 @@ export const MESSAGE_TYPES = {
   PONG: 'PONG',
   HTTP_REQUEST: 'HTTP_REQUEST',
   HTTP_RESPONSE: 'HTTP_RESPONSE',
+  HTTP_RESPONSE_START: 'HTTP_RESPONSE_START',
+  HTTP_RESPONSE_CHUNK: 'HTTP_RESPONSE_CHUNK',
+  HTTP_RESPONSE_END: 'HTTP_RESPONSE_END',
 };
 
 // Standard tunnel WebSocket path on the public server.
@@ -76,6 +79,31 @@ export function createHttpResponse({ id, status, headers, body, bodyEncoding }) 
     headers,
     body: body || null,
     bodyEncoding: bodyEncoding || 'base64',
+  };
+}
+
+export function createHttpResponseStart({ id, status, headers }) {
+  return {
+    type: MESSAGE_TYPES.HTTP_RESPONSE_START,
+    id,
+    status: status || 200,
+    headers: headers || { 'Content-Type': 'text/plain' },
+  };
+}
+
+export function createHttpResponseChunk({ id, body, bodyEncoding = 'base64' }) {
+  return {
+    type: MESSAGE_TYPES.HTTP_RESPONSE_CHUNK,
+    id,
+    body: body || null,
+    bodyEncoding,
+  };
+}
+
+export function createHttpResponseEnd({ id }) {
+  return {
+    type: MESSAGE_TYPES.HTTP_RESPONSE_END,
+    id,
   };
 }
 

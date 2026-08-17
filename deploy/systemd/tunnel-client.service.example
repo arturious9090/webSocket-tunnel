@@ -1,0 +1,18 @@
+[Unit]
+Description=WebSocket Tunnel Client
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=tunnel
+Group=tunnel
+WorkingDirectory=/opt/ws-tunnel
+EnvironmentFile=/etc/ws-tunnel/tunnel-client.env
+ExecStart=/usr/bin/node /opt/ws-tunnel/packages/client/bin/tunnel-client.js
+Restart=always
+RestartSec=5
+TimeoutStopSec=15
+
+[Install]
+WantedBy=multi-user.target

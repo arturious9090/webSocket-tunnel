@@ -1,13 +1,18 @@
 import { createServer } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
 
-const PORT = 3000;
+const PORT = Number(process.env.PORT || 3000);
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const pagePath = resolve(__dirname, 'test_page.html');
 
 const server = createServer((req, res) => {
   console.log('new', req.method, 'request on', req.url);
 
   try {
-    const response = readFileSync('./test_page.html');
+    const response = readFileSync(pagePath);
 
     res.writeHead(200, {
       'Content-Type': 'text/html; charset=utf-8',
@@ -22,5 +27,5 @@ const server = createServer((req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log('local backend listening on port', PORT);
+  console.log('local demo backend listening on port', PORT);
 });

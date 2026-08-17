@@ -1,0 +1,22 @@
+services:
+  tunnel-server:
+    build:
+      context: .
+      dockerfile: Dockerfile.server
+    container_name: ws-tunnel-server
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      CLOUDFLARE_API_TOKEN: ${CLOUDFLARE_API_TOKEN}
+      CLOUDFLARE_ZONE_ID: ${CLOUDFLARE_ZONE_ID}
+      TUNNEL_DOMAIN: ${TUNNEL_DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+      TUNNEL_AUTH_TOKEN: ${TUNNEL_AUTH_TOKEN}
+      TUNNEL_ADMIN_TOKEN: ${TUNNEL_ADMIN_TOKEN:-}
+      ACME_PRODUCTION: ${ACME_PRODUCTION:-true}
+      HTTPS_PORT: 443
+      HTTP_PORT: 80
+    volumes:
+      - ./certs:/app/certs

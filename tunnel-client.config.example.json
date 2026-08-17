@@ -5,5 +5,6 @@
   "localHost": "localhost",
   "port": 3000,
   "maxRetries": 50,
-  "retryTime": 500
+  "retryMinDelayMs": 500,
+  "retryMaxDelayMs": 30000
 }

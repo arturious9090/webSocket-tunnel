@@ -50,6 +50,32 @@ function homeDir() {
 
 export class ConfigError extends Error {}
 
+function normalizeAuthTokens(authTokens) {
+  if (!authTokens || typeof authTokens !== 'object' || Array.isArray(authTokens)) {
+    return null;
+  }
+  const result = {};
+  for (const [token, rule] of Object.entries(authTokens)) {
+    if (rule === null || rule === undefined) {
+      result[token] = { subdomains: null };
+      continue;
+    }
+    if (typeof rule === 'string') {
+      result[token] = { subdomains: rule === '*' ? null : [rule] };
+      continue;
+    }
+    if (typeof rule === 'object' && !Array.isArray(rule)) {
+      const subdomains = Array.isArray(rule.subdomains)
+        ? rule.subdomains.map((s) => String(s).toLowerCase())
+        : null;
+      result[token] = { subdomains };
+      continue;
+    }
+    result[token] = { subdomains: null };
+  }
+  return result;
+}
+
 export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG || DEFAULT_CONFIG_PATH) {
   const file = readConfigFile(configPath);
 
@@ -62,7 +88,9 @@ export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG || DEFAU
   const acmeEmail = env('ACME_EMAIL') || file.acme?.email;
 
   // Auth
-  const authToken = env('TUNNEL_AUTH_TOKEN') || file.authToken;
+  const authToken = env('TUNNEL_AUTH_TOKEN') || file.authToken || null;
+  const adminToken = env('TUNNEL_ADMIN_TOKEN') || file.adminToken || authToken;
+  const authTokens = normalizeAuthTokens(file.authTokens);
 
   // Network
   const httpsPort = toNumber(env('HTTPS_PORT') || file.httpsPort, 443);
@@ -71,6 +99,14 @@ export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG || DEFAU
   const certsDir = env('CERTS_DIR') || file.certsDir || resolve(process.cwd(), 'certs');
 
   const proxy = toBoolean(env('CLOUDFLARE_PROXY') || file.cloudflare?.proxy, false);
+  const requestTimeoutMs = toNumber(
+    env('REQUEST_TIMEOUT_MS') || file.requestTimeoutMs,
+    30_000,
+  );
+
+  const rateLimit = file.rateLimit && typeof file.rateLimit === 'object' ? file.rateLimit : {};
+  const rateLimitWindowMs = toNumber(env('RATE_LIMIT_WINDOW_MS') || rateLimit.windowMs, 60_000);
+  const rateLimitMax = toNumber(env('RATE_LIMIT_MAX') || rateLimit.max, 0);
 
   const errors = [];
   if (!cloudflareApiToken) {
@@ -85,8 +121,8 @@ export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG || DEFAU
   if (!acmeEmail) {
     errors.push('missing ACME email (config: acme.email or env ACME_EMAIL)');
   }
-  if (!authToken) {
-    errors.push('missing auth token (config: authToken or env TUNNEL_AUTH_TOKEN)');
+  if (!authToken && !authTokens) {
+    errors.push('missing auth token (config: authToken or config: authTokens, or env TUNNEL_AUTH_TOKEN)');
   }
 
   if (errors.length) {
@@ -105,10 +141,17 @@ export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG || DEFAU
       production: toBoolean(env('ACME_PRODUCTION') || file.acme?.production, true),
     },
     authToken,
+    authTokens,
+    adminToken,
     httpsPort,
     httpPort,
     publicIp,
     certsDir,
+    requestTimeoutMs,
+    rateLimit: {
+      windowMs: rateLimitWindowMs,
+      max: rateLimitMax,
+    },
     home: homeDir(),
     configPath,
   };

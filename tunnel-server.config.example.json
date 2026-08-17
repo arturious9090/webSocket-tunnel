@@ -10,8 +10,18 @@
     "production": true
   },
   "authToken": "YOUR_SHARED_SECRET_TOKEN",
+  "adminToken": "YOUR_ADMIN_TOKEN",
+  "authTokens": {
+    "CLIENT_TOKEN_1": { "subdomains": ["app"] },
+    "CLIENT_TOKEN_2": { "subdomains": ["*"] }
+  },
+  "rateLimit": {
+    "windowMs": 60000,
+    "max": 0
+  },
   "httpsPort": 443,
   "httpPort": 80,
   "publicIp": null,
-  "certsDir": "./certs"
+  "certsDir": "./certs",
+  "requestTimeoutMs": 30000
 }

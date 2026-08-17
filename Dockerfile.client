@@ -1,0 +1,17 @@
+# Local tunnel client image.
+FROM node:20-alpine
+
+WORKDIR /app
+
+# Install production dependencies using workspaces.
+COPY package.json package-lock.json ./
+COPY packages/protocol/package.json packages/protocol/package.json
+COPY packages/client/package.json packages/client/package.json
+RUN npm ci --omit=dev --workspace @ws-tunnel/client --workspace @ws-tunnel/protocol
+
+COPY packages/protocol packages/protocol
+COPY packages/client packages/client
+
+ENV NODE_ENV=production
+
+CMD ["node", "packages/client/bin/tunnel-client.js"]

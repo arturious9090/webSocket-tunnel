@@ -8,6 +8,22 @@
     "tunnel-server": "./bin/tunnel-server.js"
   },
   "main": "src/server.js",
+  "files": [
+    "bin",
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/arturious9090/webSocket-tunnel.git"
+  },
+  "keywords": [
+    "tunnel",
+    "websocket",
+    "cloudflare",
+    "lets-encrypt",
+    "reverse-proxy",
+    "ngrok"
+  ],
   "scripts": {
     "start": "node bin/tunnel-server.js"
   },

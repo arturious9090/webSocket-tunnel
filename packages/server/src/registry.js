@@ -70,4 +70,17 @@ export class TunnelRegistry {
   get size() {
     return this.hosts.size;
   }
+
+  list() {
+    const entries = [];
+    for (const [hostname, ws] of this.hosts) {
+      entries.push({
+        hostname,
+        subdomain: ws.subdomain || null,
+        id: ws.id || null,
+        connectedAt: ws.connectedAt || null,
+      });
+    }
+    return entries;
+  }
 }

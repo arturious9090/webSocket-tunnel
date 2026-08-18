@@ -1,6 +1,6 @@
 {
-  "name": "@ws-tunnel/protocol",
-  "version": "0.1.0",
+  "name": "@arturious/web-socket-tunnel-protocol",
+  "version": "1.0.1",
   "description": "Shared protocol types, constants and logger for ws-tunnel server and client",
   "license": "MIT",
   "type": "module",

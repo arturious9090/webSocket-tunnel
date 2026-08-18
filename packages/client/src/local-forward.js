@@ -5,7 +5,7 @@ import {
   createHttpResponseChunk,
   createHttpResponseEnd,
   filterHeaders,
-} from '@ws-tunnel/protocol';
+} from '@arturious/web-socket-tunnel-protocol';
 
 export function createLocalForwarder({ host, port, log = console.log }) {
   function buildOptions(httpRequest) {

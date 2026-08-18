@@ -1,6 +1,6 @@
 {
-  "name": "@ws-tunnel/client",
-  "version": "0.1.0",
+  "name": "@arturious/web-socket-tunnel-client",
+  "version": "1.0.1",
   "description": "Local tunnel client that forwards traffic from the public server to a local port",
   "license": "MIT",
   "type": "module",
@@ -33,7 +33,7 @@
     "start": "node bin/tunnel-client.js"
   },
   "dependencies": {
-    "@ws-tunnel/protocol": "^0.1.0",
+    "@arturious/web-socket-tunnel-protocol": "^1.0.1",
     "ws": "^8.21.3"
   }
 }

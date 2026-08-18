@@ -59,9 +59,9 @@ npm install
 ### Установка через npm
 
 ```bash
-npm install -g @ws-tunnel/server @ws-tunnel/client
+npm install -g @arturious/web-socket-tunnel-server @arturious/web-socket-tunnel-client
 # или локально в проект
-npm install @ws-tunnel/client
+npm install @arturious/web-socket-tunnel-client
 ```
 
 После установки доступны команды `tunnel-server` и `tunnel-client`.

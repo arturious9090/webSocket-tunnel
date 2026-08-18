@@ -3,7 +3,7 @@ import { createServer as createHttpServer } from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { WebSocket, WebSocketServer } from 'ws';
 
-import { TUNNEL_PATH } from '@ws-tunnel/protocol';
+import { TUNNEL_PATH } from '@arturious/web-socket-tunnel-protocol';
 import {
   MESSAGE_TYPES,
   createReadyMessage,
@@ -11,8 +11,8 @@ import {
   createPingMessage,
   createHttpRequest,
   filterHeaders,
-} from '@ws-tunnel/protocol';
-import { createLogger } from '@ws-tunnel/protocol/logger.js';
+} from '@arturious/web-socket-tunnel-protocol';
+import { createLogger } from '@arturious/web-socket-tunnel-protocol/logger.js';
 
 import { ensureCertificate } from './acme.js';
 import { resolvePublicIp } from './public-ip.js';

@@ -1,6 +1,6 @@
 {
-  "name": "@ws-tunnel/server",
-  "version": "0.1.0",
+  "name": "@arturious/web-socket-tunnel-server",
+  "version": "1.0.1",
   "description": "Public tunnel server with automatic Let's Encrypt wildcard certificates via Cloudflare DNS",
   "license": "MIT",
   "type": "module",
@@ -34,7 +34,7 @@
     "start": "node bin/tunnel-server.js"
   },
   "dependencies": {
-    "@ws-tunnel/protocol": "^0.1.0",
+    "@arturious/web-socket-tunnel-protocol": "^1.0.1",
     "acme-client": "^5.4.0",
     "ws": "^8.21.3"
   }

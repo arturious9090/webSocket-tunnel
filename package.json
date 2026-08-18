@@ -4,7 +4,7 @@
   "description": "WebSocket HTTP tunnel (Cloudflare Tunnel alternative) with automatic Let's Encrypt wildcard certificates",
   "license": "MIT",
   "type": "module",
-  "private": false,
+  "private": true,
   "engines": {
     "node": ">=18"
   },
@@ -14,7 +14,7 @@
   "scripts": {
     "test": "node --test \"packages/**/test/**/*.test.js\"",
     "backend": "node examples/http_server.js",
-    "server": "npm run start --workspace @ws-tunnel/server",
-    "client": "npm run start --workspace @ws-tunnel/client"
+    "server": "npm run start --workspace @arturious/web-socket-tunnel-server",
+    "client": "npm run start --workspace @arturious/web-socket-tunnel-client"
   }
 }

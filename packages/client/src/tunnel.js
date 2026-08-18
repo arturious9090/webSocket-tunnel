@@ -5,8 +5,8 @@ import {
   MESSAGE_TYPES,
   createRegisterMessage,
   createPongMessage,
-} from '@ws-tunnel/protocol';
-import { createLogger } from '@ws-tunnel/protocol/logger.js';
+} from '@arturious/web-socket-tunnel-protocol';
+import { createLogger } from '@arturious/web-socket-tunnel-protocol/logger.js';
 import {
   createHttpResponse,
   createHttpResponseStart,

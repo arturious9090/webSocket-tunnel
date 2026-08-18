@@ -44,6 +44,10 @@ Examples:
   tunnel-client init
   tunnel-client --server tunnel.example.com --token SECRET --subdomain app --port 3000
   tunnel-client 3000
+
+Run:
+  tunnel-client                             # installed command (npm i -g)
+  node packages/client/bin/tunnel-client.js  # from source, no npm
 `;
 
 export function printVersion() {

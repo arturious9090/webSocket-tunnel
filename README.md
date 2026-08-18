@@ -78,6 +78,23 @@ npm install @arturious/web-socket-tunnel-client
 
 После установки доступны команды `tunnel-server` и `tunnel-client`.
 
+## Запуск (CLI)
+
+```bash
+# сервер
+tunnel-server                              # установленная команда (npm i -g)
+node packages/server/bin/tunnel-server.js  # из исходников, без npm
+
+# клиент
+tunnel-client                              # установленная команда (npm i -g)
+node packages/client/bin/tunnel-client.js  # из исходников, без npm
+```
+
+`tunnel-server` и `tunnel-client` — это CLI пакета (доступны после
+`npm i -g @arturious/web-socket-tunnel-server @arturious/web-socket-tunnel-client`).
+Без npm сервер и клиент запускаются напрямую через `node`, а на Linux/macOS —
+как исполняемый файл (`./packages/server/bin/tunnel-server.js`).
+
 ## Быстрый старт
 
 ### 1. Настройка сервера (VPS)

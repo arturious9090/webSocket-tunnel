@@ -28,6 +28,10 @@ Environment:
 Example:
   tunnel-server init
   tunnel-server --config tunnel-server.config.json
+
+Run:
+  tunnel-server                             # installed command (npm i -g)
+  node packages/server/bin/tunnel-server.js  # from source, no npm
 `;
 
 export function printVersion() {

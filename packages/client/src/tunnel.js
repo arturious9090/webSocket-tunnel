@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import WebSocket from 'ws';
 import {
   TUNNEL_PATH,
@@ -15,11 +16,11 @@ import {
 import { createLocalForwarder } from './local-forward.js';
 
 function buildServerUrl(server) {
-  if (/^wss?:\/\//i.test(server)) {
-    return server;
-  }
   // Accept a bare host like "tunnel.example.com" and default to wss://
-  return `wss://${server}${TUNNEL_PATH}`;
+  if (!/^wss?:\/\//i.test(server)) {
+    server = `wss://${server}`;
+  }
+  return ensureTunnelPath(server);
 }
 
 function ensureTunnelPath(urlString) {
@@ -33,8 +34,15 @@ function ensureTunnelPath(urlString) {
 export async function startTunnel(config) {
   const log = createLogger('client');
 
-  const base = buildServerUrl(config.server);
-  const serverUrl = ensureTunnelPath(base);
+  const serverUrl = buildServerUrl(config.server);
+
+  const wsOptions = {};
+  if (config.insecure) {
+    wsOptions.rejectUnauthorized = false;
+  }
+  if (config.ca) {
+    wsOptions.ca = readFileSync(config.ca);
+  }
 
   const forwarder = createLocalForwarder({
     host: config.localHost,
@@ -62,6 +70,8 @@ export async function startTunnel(config) {
     }
     if (retryCount >= config.maxRetries) {
       log('max retries reached, giving up');
+      shouldReconnect = false;
+      process.exitCode = 1;
       return;
     }
     retryCount += 1;
@@ -113,7 +123,7 @@ export async function startTunnel(config) {
   async function connect() {
     log('connecting to', serverUrl);
 
-    const ws = new WebSocket(serverUrl);
+    const ws = new WebSocket(serverUrl, wsOptions);
     currentWs = ws;
 
     ws.on('open', () => {

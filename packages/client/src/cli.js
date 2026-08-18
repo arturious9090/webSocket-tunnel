@@ -1,8 +1,9 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { createInterface } from 'node:readline/promises';
+import { getUserConfigPath } from './config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
@@ -22,18 +23,22 @@ Options:
   -s, --server <url>          Tunnel server address (domain or wss://...)
   -t, --token <token>         Shared auth token
       --subdomain <name>      Subdomain to register ("app" -> app.example.com)
+      --host <name>           Alias for --subdomain
       --local-host <host>     Local service host (default: localhost)
   -p, --port <port>           Local service port (default: 3000)
       --max-retries <n>       Max reconnect attempts (default: 50)
       --retry-min-delay <ms>  Min reconnect delay (default: 500)
       --retry-max-delay <ms>  Max reconnect delay (default: 30000)
-  -c, --config <path>         Path to JSON config file
+      --insecure              Disable TLS certificate verification (testing only)
+      --ca <path>             Path to a custom CA certificate for the server
+  -c, --config <path>         Path to JSON config file (auto-discovered by default)
   -h, --help                  Show this help
   -v, --version               Show version
 
 Environment:
   TUNNEL_SERVER, TUNNEL_AUTH_TOKEN, TUNNEL_SUBDOMAIN, LOCAL_HTTP_HOST,
-  LOCAL_HTTP_PORT, MAX_RETRIES, RETRY_MIN_DELAY, RETRY_MAX_DELAY, TUNNEL_CONFIG
+  LOCAL_HTTP_PORT, MAX_RETRIES, RETRY_MIN_DELAY, RETRY_MAX_DELAY,
+  TUNNEL_INSECURE, TUNNEL_CA, TUNNEL_CONFIG
 
 Examples:
   tunnel-client init
@@ -53,7 +58,7 @@ function question(rl, text, fallback = null) {
   });
 }
 
-export async function runInit(targetPath = resolve(process.cwd(), 'tunnel-client.config.json')) {
+export async function runInit(targetPath = getUserConfigPath()) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
   try {
@@ -90,9 +95,10 @@ export async function runInit(targetPath = resolve(process.cwd(), 'tunnel-client
       }
     }
 
+    mkdirSync(dirname(targetPath), { recursive: true });
     writeFileSync(targetPath, JSON.stringify(config, null, 2) + '\n');
     console.log(`\nConfig written to ${targetPath}`);
-    console.log(`Run: tunnel-client --config ${targetPath}`);
+    console.log('Run: tunnel-client');
   } finally {
     rl.close();
   }

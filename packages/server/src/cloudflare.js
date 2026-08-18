@@ -54,7 +54,17 @@ async function cfRequest({ apiToken, zoneId, path, method = 'GET', body }) {
       .map((err) => err.message || JSON.stringify(err))
       .join('; ') || `Cloudflare API returned HTTP ${response.status}`;
 
-    throw new CloudflareError(message, {
+    // Surface actionable context for the most common misconfiguration.
+    let hint = '';
+    if (/authentication/i.test(message) || response.status === 403 || response.status === 401) {
+      hint =
+        'Check CLOUDFLARE_API_TOKEN (or config cloudflare.apiToken): it must be a valid Cloudflare API token with Zone > DNS > Edit permission for this zone.';
+    } else if (/zone/i.test(message) || response.status === 404) {
+      hint =
+        'Check CLOUDFLARE_ZONE_ID (or config cloudflare.zoneId): make sure it belongs to the zone managed by this API token.';
+    }
+
+    throw new CloudflareError(hint ? `${message} — ${hint}` : message, {
       status: response.status,
       errors: apiErrors,
     });
@@ -71,10 +81,21 @@ export async function listDnsRecords({ apiToken, zoneId, name, type }) {
   if (type) {
     params.set('type', type);
   }
+  params.set('per_page', '100');
 
-  const query = params.toString();
-  const path = `/dns_records${query ? `?${query}` : ''}`;
-  return cfRequest({ apiToken, zoneId, path });
+  const results = [];
+  let page = 1;
+  for (;;) {
+    params.set('page', String(page));
+    const path = `/dns_records?${params.toString()}`;
+    const batch = await cfRequest({ apiToken, zoneId, path });
+    results.push(...batch);
+    if (!Array.isArray(batch) || batch.length < 100) {
+      break;
+    }
+    page += 1;
+  }
+  return results;
 }
 
 export async function upsertARecord({ apiToken, zoneId, name, content, proxied = false }) {

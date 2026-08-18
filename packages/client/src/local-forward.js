@@ -50,6 +50,18 @@ export function createLocalForwarder({ host, port, log = console.log }) {
             }),
           );
         });
+        res.on('error', (error) => {
+          log('local response failed:', error.message);
+          resolve(
+            createHttpResponse({
+              id: httpRequest.id,
+              status: 502,
+              headers: { 'Content-Type': 'text/plain' },
+              body: Buffer.from('local response failed: ' + error.message).toString('base64'),
+              bodyEncoding: 'base64',
+            }),
+          );
+        });
       });
 
       req.on('error', (error) => {
@@ -81,6 +93,12 @@ export function createLocalForwarder({ host, port, log = console.log }) {
       events.onStart?.(res.statusCode || 200, filterHeaders(res.headers));
       res.on('data', (chunk) => events.onChunk?.(chunk));
       res.on('end', () => events.onEnd?.());
+      // A mid-stream error means the local response was truncated; terminate
+      // the stream so the server closes the browser connection cleanly.
+      res.on('error', (error) => {
+        log('local response failed:', error.message);
+        events.onEnd?.();
+      });
     });
 
     req.on('error', (error) => {

@@ -12,6 +12,8 @@ import {
 import { createCloudflareDnsAdapter } from './cloudflare.js';
 
 const RENEW_BEFORE_MS = 15 * 24 * 60 * 60 * 1000; // renew 15 days before expiry
+const ACCOUNT_KEY_FILE = 'account/account.key';
+const DEFAULT_CHALLENGE_WAIT_MS = 5000;
 
 function log(...args) {
   console.log('[acme]', ...args);
@@ -19,6 +21,34 @@ function log(...args) {
 
 function ensureDir(path) {
   mkdirSync(path, { recursive: true });
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function accountKeyPath(certsDir) {
+  return `${certsDir}/${ACCOUNT_KEY_FILE}`;
+}
+
+function readAccountKey(certsDir) {
+  const path = accountKeyPath(certsDir);
+  if (!existsSync(path)) {
+    return null;
+  }
+  return readFileSync(path, 'utf8');
+}
+
+async function ensureAccountKey(certsDir) {
+  const existing = readAccountKey(certsDir);
+  if (existing) {
+    return existing;
+  }
+  const key = (await acme.crypto.createPrivateRsaKey()).toString();
+  ensureDir(`${certsDir}/account`);
+  writeFileSync(accountKeyPath(certsDir), key, { mode: 0o600 });
+  log(`account key saved to ${accountKeyPath(certsDir)}`);
+  return key;
 }
 
 function readCertIfValid(certsDir, domain) {
@@ -61,7 +91,7 @@ function writeCert(certsDir, domain, cert, key) {
 }
 
 async function issueCertificate({ config, domain, altNames }) {
-  const accountKey = await acme.crypto.createPrivateRsaKey();
+  const accountKey = await ensureAccountKey(config.certsDir);
   const [csrKey, csr] = await acme.crypto.createCsr({
     commonName: domain,
     altNames,
@@ -83,6 +113,10 @@ async function issueCertificate({ config, domain, altNames }) {
 
   log(`issuing certificate for ${domain} (${altNames.join(', ')}) via ${directoryUrl}`);
 
+  const challengeWaitMs = Number.isFinite(config.acme.challengeWaitMs)
+    ? config.acme.challengeWaitMs
+    : DEFAULT_CHALLENGE_WAIT_MS;
+
   const certificate = await client.auto({
     csr,
     email: config.acme.email,
@@ -93,6 +127,10 @@ async function issueCertificate({ config, domain, altNames }) {
       const recordName = `_acme-challenge.${authz.identifier.value}`;
       log('creating DNS-01 TXT record', recordName);
       await dnsAdapter.set({ name: recordName, value: keyAuthorization });
+      // DNS-only mode has no Cloudflare proxy, but propagation to public
+      // resolvers still takes time. Wait before letting the CA validate.
+      log(`waiting ${challengeWaitMs}ms for DNS propagation`);
+      await sleep(challengeWaitMs);
     },
     challengeRemoveFn: async (authz, challenge, keyAuthorization) => {
       const recordName = `_acme-challenge.${authz.identifier.value}`;

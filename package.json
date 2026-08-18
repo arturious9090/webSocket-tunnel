@@ -1,10 +1,10 @@
 {
-  "name": "ws-tunnel",
-  "version": "0.1.0",
+  "name": "web-socket-tunnel",
+  "version": "1.0.1",
   "description": "WebSocket HTTP tunnel (Cloudflare Tunnel alternative) with automatic Let's Encrypt wildcard certificates",
   "license": "MIT",
   "type": "module",
-  "private": true,
+  "private": false,
   "engines": {
     "node": ">=18"
   },

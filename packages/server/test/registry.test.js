@@ -16,6 +16,14 @@ test('register maps subdomain to full hostname', () => {
   assert.equal(registry.size, 1);
 });
 
+test('register normalizes malformed subdomain', () => {
+  const registry = new TunnelRegistry({ domain: 'example.com' });
+  const ws = fakeWs('e');
+  const hostname = registry.register(ws, 'App.Tunnel 123');
+  assert.equal(hostname, 'apptunnel123.example.com');
+  assert.ok(registry.getByHostname('apptunnel123.example.com'));
+});
+
 test('register with no subdomain maps to apex', () => {
   const registry = new TunnelRegistry({ domain: 'example.com' });
   const ws = fakeWs('b');

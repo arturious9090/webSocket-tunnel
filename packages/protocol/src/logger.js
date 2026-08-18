@@ -37,12 +37,15 @@ export function createLogger(component = 'app', level = readLevel()) {
     }
   }
 
-  return {
-    debug: (...args) => emit('debug', LEVELS.debug, args),
-    info: (...args) => emit('info', LEVELS.info, args),
-    warn: (...args) => emit('warn', LEVELS.warn, args),
-    error: (...args) => emit('error', LEVELS.error, args),
-  };
+  // The logger itself is callable (log(...) === log.info(...)) so it can be
+  // passed to functions that expect a plain `log` function, while still
+  // exposing leveled methods for structured logging.
+  const log = (...args) => emit('info', LEVELS.info, args);
+  log.debug = (...args) => emit('debug', LEVELS.debug, args);
+  log.info = (...args) => emit('info', LEVELS.info, args);
+  log.warn = (...args) => emit('warn', LEVELS.warn, args);
+  log.error = (...args) => emit('error', LEVELS.error, args);
+  return log;
 }
 
 export default createLogger;

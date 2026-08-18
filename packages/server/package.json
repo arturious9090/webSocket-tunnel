@@ -4,6 +4,12 @@
   "description": "Public tunnel server with automatic Let's Encrypt wildcard certificates via Cloudflare DNS",
   "license": "MIT",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "bin": {
     "tunnel-server": "./bin/tunnel-server.js"
   },
@@ -28,7 +34,7 @@
     "start": "node bin/tunnel-server.js"
   },
   "dependencies": {
-    "@ws-tunnel/protocol": "0.1.0",
+    "@ws-tunnel/protocol": "^0.1.0",
     "acme-client": "^5.4.0",
     "ws": "^8.21.3"
   }

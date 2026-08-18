@@ -56,6 +56,16 @@ npm install
 Корневой `package.json` использует npm workspaces, поэтому зависимости всех
 пакетов ставятся одной командой.
 
+### Установка через npm
+
+```bash
+npm install -g @ws-tunnel/server @ws-tunnel/client
+# или локально в проект
+npm install @ws-tunnel/client
+```
+
+После установки доступны команды `tunnel-server` и `tunnel-client`.
+
 ## Быстрый старт
 
 ### 1. Настройка сервера (VPS)
@@ -89,6 +99,7 @@ node packages/server/bin/tunnel-server.js
 | `domain` | Базовый домен (например `example.com`) |
 | `acme.email` | Email для регистрации в Let's Encrypt |
 | `acme.production` | `true` — боевой CA, `false` — staging (для тестов) |
+| `acme.challengeWaitMs` | Пауза (мс) перед валидацией DNS-01, чтобы TXT-запись успела распространиться |
 | `authToken` | Общий секрет для аутентификации клиентов |
 | `adminToken` | Токен для статус-эндпоинта (fallback: `authToken`) |
 | `authTokens` | Per-client токены: `{ "token": { "subdomains": ["app"] } }` |
@@ -117,7 +128,9 @@ npm run client -- init
   "port": 3000,
   "maxRetries": 50,
   "retryMinDelayMs": 500,
-  "retryMaxDelayMs": 30000
+  "retryMaxDelayMs": 30000,
+  "insecure": false,
+  "ca": null
 }
 ```
 
@@ -176,6 +189,8 @@ tunnel-client --version
 | `PUBLIC_IP` | Публичный IP сервера |
 | `CERTS_DIR` | Директория сертификатов |
 | `REQUEST_TIMEOUT_MS` | Таймаут запроса к клиенту |
+| `MAX_WS_PAYLOAD` | Максимальный размер WS-сообщения от клиента (байт, по умолчанию 16777216) |
+| `ACME_CHALLENGE_WAIT_MS` | Пауза перед валидацией DNS-01 (мс) |
 | `RATE_LIMIT_WINDOW_MS` | Окно rate-limit |
 | `RATE_LIMIT_MAX` | Максимум запросов на окно |
 | `LOG_LEVEL` | `debug`/`info`/`warn`/`error` |
@@ -193,6 +208,8 @@ tunnel-client --version
 | `MAX_RETRIES` | Максимум попыток переподключения |
 | `RETRY_MIN_DELAY` | Минимальная задержка переподключения (мс) |
 | `RETRY_MAX_DELAY` | Максимальная задержка переподключения (мс) |
+| `TUNNEL_INSECURE` | `true` — не проверять TLS-сертификат сервера (только для тестов) |
+| `TUNNEL_CA` | Путь к CA-сертификату для проверки сервера |
 | `LOG_LEVEL` | `debug`/`info`/`warn`/`error` |
 | `TUNNEL_CONFIG` | Путь к JSON-конфигу клиента |
 

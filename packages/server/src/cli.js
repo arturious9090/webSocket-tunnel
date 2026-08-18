@@ -1,8 +1,9 @@
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { randomBytes } from 'node:crypto';
 import { createInterface } from 'node:readline/promises';
+import { getUserConfigPath } from './config.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const pkg = JSON.parse(readFileSync(resolve(__dirname, '../package.json'), 'utf8'));
@@ -15,7 +16,7 @@ Usage:
   tunnel-server init
 
 Options:
-  -c, --config <path>   Path to JSON config file
+  -c, --config <path>   Path to JSON config file (auto-discovered by default)
   -h, --help            Show this help
   -v, --version         Show version
 
@@ -45,7 +46,7 @@ function toBoolean(value) {
   return /^(y|yes|true|1)$/i.test(String(value).trim());
 }
 
-export async function runInit(targetPath = resolve(process.cwd(), 'tunnel-server.config.json')) {
+export async function runInit(targetPath = getUserConfigPath()) {
   const rl = createInterface({ input: process.stdin, output: process.stdout });
 
   try {
@@ -94,8 +95,10 @@ export async function runInit(targetPath = resolve(process.cwd(), 'tunnel-server
       }
     }
 
+    mkdirSync(dirname(targetPath), { recursive: true });
     writeFileSync(targetPath, JSON.stringify(config, null, 2) + '\n');
     console.log(`\nConfig written to ${targetPath}`);
+    console.log('Run: tunnel-server');
     console.log(`# Share this client token with people who need to expose a service:`);
     console.log(authToken);
   } finally {

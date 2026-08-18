@@ -26,7 +26,8 @@ export class TunnelRegistry {
   }
 
   register(ws, subdomain) {
-    const hostname = this.buildHostname(subdomain);
+    const normalized = normalizeSubdomain(subdomain);
+    const hostname = this.buildHostname(normalized);
 
     const existing = this.hosts.get(hostname);
     if (existing && existing !== ws) {
@@ -40,6 +41,7 @@ export class TunnelRegistry {
 
     this.hosts.set(hostname, ws);
     this.wsToHostname.set(ws, hostname);
+    ws.normalizedSubdomain = normalized || null;
     return hostname;
   }
 
@@ -77,6 +79,7 @@ export class TunnelRegistry {
       entries.push({
         hostname,
         subdomain: ws.subdomain || null,
+        normalizedSubdomain: ws.normalizedSubdomain ?? null,
         id: ws.id || null,
         connectedAt: ws.connectedAt || null,
       });

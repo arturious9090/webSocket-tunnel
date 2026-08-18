@@ -1,11 +1,31 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
+import os from 'node:os';
 
-const DEFAULT_CONFIG_PATH = resolve(process.cwd(), 'tunnel-client.config.json');
+const CONFIG_FILE_NAME = 'tunnel-client.config.json';
+const USER_CONFIG_DIR = join(os.homedir(), '.ws-tunnel');
+
+export function getUserConfigPath() {
+  return join(USER_CONFIG_DIR, CONFIG_FILE_NAME);
+}
+
+export function getProjectConfigPath(cwd = process.cwd()) {
+  return resolve(cwd, CONFIG_FILE_NAME);
+}
+
+// Ordered list of default config locations. The first existing file wins, so
+// users can drop a project-local config next to their app or keep a single
+// global config in ~/.ws-tunnel and never pass a path.
+export function resolveConfigPaths({ explicit, cwd = process.cwd() } = {}) {
+  if (explicit) {
+    return [resolve(cwd, explicit)];
+  }
+  return [getProjectConfigPath(cwd), getUserConfigPath()];
+}
 
 function readConfigFile(path) {
   if (!path || !existsSync(path)) {
-    return {};
+    return null;
   }
 
   try {
@@ -14,6 +34,16 @@ function readConfigFile(path) {
   } catch (error) {
     throw new Error(`failed to read config file "${path}": ${error.message}`);
   }
+}
+
+function readFirstConfig(paths) {
+  for (const path of paths) {
+    const file = readConfigFile(path);
+    if (file) {
+      return { file, path };
+    }
+  }
+  return { file: {}, path: null };
 }
 
 function parseArgs(argv) {
@@ -77,13 +107,24 @@ function toNumber(value, fallback) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function toBoolean(value, fallback = false) {
+  if (value === undefined || value === null) {
+    return fallback;
+  }
+  if (typeof value === 'boolean') {
+    return value;
+  }
+  const normalized = String(value).toLowerCase();
+  return ['1', 'true', 'yes', 'on'].includes(normalized);
+}
+
 export class ConfigError extends Error {}
 
 export function loadClientConfig(argv = process.argv.slice(2)) {
   const { args, positional } = parseArgs(argv);
 
-  const configPath = args.config || args.c || env('TUNNEL_CONFIG') || DEFAULT_CONFIG_PATH;
-  const file = readConfigFile(configPath);
+  const explicit = args.config || args.c || env('TUNNEL_CONFIG');
+  const { file, path: configPath } = readFirstConfig(resolveConfigPaths({ explicit }));
 
   const positionalPort = positional.find((value) => /^\d+$/.test(value));
 
@@ -102,6 +143,8 @@ export function loadClientConfig(argv = process.argv.slice(2)) {
     args['retry-max-delay'] || env('RETRY_MAX_DELAY') || file.retryMaxDelayMs,
     Math.max(retryMinDelayMs, 30_000),
   );
+  const insecure = toBoolean(args.insecure || env('TUNNEL_INSECURE') || file.insecure, false);
+  const ca = args.ca || env('TUNNEL_CA') || file.ca || null;
 
   const errors = [];
   if (!server) {
@@ -124,6 +167,8 @@ export function loadClientConfig(argv = process.argv.slice(2)) {
     maxRetries,
     retryMinDelayMs,
     retryMaxDelayMs,
+    insecure,
+    ca,
     configPath,
   };
 }

@@ -10,6 +10,7 @@ import {
   createErrorMessage,
   createPingMessage,
   createHttpRequest,
+  filterHeaders,
 } from '@ws-tunnel/protocol';
 import { createLogger } from '@ws-tunnel/protocol/logger.js';
 
@@ -17,11 +18,12 @@ import { ensureCertificate } from './acme.js';
 import { resolvePublicIp } from './public-ip.js';
 import { upsertARecord } from './cloudflare.js';
 import { TunnelRegistry } from './registry.js';
-import { authorizeToken, isSubdomainAllowed } from './auth.js';
+import { authorizeToken, isSubdomainAllowed, safeEqual } from './auth.js';
 
 const log = createLogger('server');
 
 const MAX_BODY_SIZE = Number(process.env.MAX_BODY_SIZE || 1024 * 1024);
+const MAX_WS_PAYLOAD = Number(process.env.MAX_WS_PAYLOAD || 16 * 1024 * 1024);
 const PING_INTERVAL_MS = 30_000;
 const PING_TIMEOUT_MS = 10_000;
 const CERT_RENEW_CHECK_INTERVAL_MS = 12 * 60 * 60 * 1000; // 12h
@@ -105,7 +107,11 @@ export async function startServer(config) {
 
   // 3. HTTPS server (terminates TLS for browsers) + WebSocket for tunnels.
   const httpsServer = createHttpsServer({ cert: activeCert.cert, key: activeCert.key });
-  const wss = new WebSocketServer({ server: httpsServer, path: TUNNEL_PATH });
+  const wss = new WebSocketServer({
+    server: httpsServer,
+    path: TUNNEL_PATH,
+    maxPayload: MAX_WS_PAYLOAD,
+  });
 
   function clearPendingTimer(pending) {
     if (pending && pending.timer) {
@@ -162,7 +168,7 @@ export async function startServer(config) {
 
   function handleResponseMessage(ws, message) {
     const pending = pendingRequests.get(message.id);
-    if (!pending) {
+    if (!pending || pending.ws !== ws) {
       return;
     }
 
@@ -256,6 +262,10 @@ export async function startServer(config) {
     ws.on('close', () => {
       log.info('tunnel connection closed', ws.id);
       clearAliveTimeout(ws);
+      if (ws.host) {
+        tunnelStats.delete(ws.host);
+        rateBuckets.delete(ws.host);
+      }
       registry.unregister(ws);
       rejectPendingForWs(ws);
     });
@@ -348,7 +358,7 @@ export async function startServer(config) {
       flushStart() {
         this.started = true;
         const status = this.status || 200;
-        const headers = this.headers || { 'Content-Type': 'text/plain' };
+        const headers = filterHeaders(this.headers || { 'Content-Type': 'text/plain' });
         res.writeHead(status, headers);
         // Flush any chunks that arrived before headers were written.
         for (const chunkMessage of this.chunks) {
@@ -374,11 +384,12 @@ export async function startServer(config) {
     // Strip port (e.g. "app.example.com:443" or proxies may append :80)
     const hostname = hostHeader.split(':')[0].toLowerCase();
 
-    // Status endpoint (admin-only, guarded by adminToken below).
+    // Status endpoint (admin-only, guarded by adminToken below). Denies access
+    // whenever no admin token is configured, and compares in constant time.
     if (req.url === STATUS_PATH || req.url?.startsWith(`${STATUS_PATH}?`)) {
       const authHeader = req.headers.authorization || '';
       const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : '';
-      if (!config.adminToken || token === config.adminToken) {
+      if (config.adminToken && token && safeEqual(token, config.adminToken)) {
         handleStatusRequest(res);
       } else {
         res.writeHead(401, { 'Content-Type': 'text/plain' });
@@ -471,7 +482,8 @@ export async function startServer(config) {
 
   // 4. Plain HTTP server on port 80 -> redirect to HTTPS.
   const httpServer = createHttpServer((req, res) => {
-    const host = req.headers.host || config.domain;
+    const hostHeader = req.headers.host || config.domain;
+    const host = hostHeader.split(':')[0];
     res.writeHead(301, {
       Location: `https://${host}${req.url}`,
       'Content-Type': 'text/plain',

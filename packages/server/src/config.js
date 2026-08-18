@@ -1,12 +1,28 @@
 import { readFileSync, existsSync } from 'node:fs';
-import { resolve } from 'node:path';
+import { resolve, join } from 'node:path';
 import os from 'node:os';
 
-const DEFAULT_CONFIG_PATH = resolve(process.cwd(), 'tunnel-server.config.json');
+const CONFIG_FILE_NAME = 'tunnel-server.config.json';
+const USER_CONFIG_DIR = join(os.homedir(), '.ws-tunnel');
+
+export function getUserConfigPath() {
+  return join(USER_CONFIG_DIR, CONFIG_FILE_NAME);
+}
+
+export function getProjectConfigPath(cwd = process.cwd()) {
+  return resolve(cwd, CONFIG_FILE_NAME);
+}
+
+export function resolveConfigPaths({ explicit, cwd = process.cwd() } = {}) {
+  if (explicit) {
+    return [resolve(cwd, explicit)];
+  }
+  return [getProjectConfigPath(cwd), getUserConfigPath()];
+}
 
 function readConfigFile(path) {
   if (!path || !existsSync(path)) {
-    return {};
+    return null;
   }
 
   try {
@@ -15,6 +31,16 @@ function readConfigFile(path) {
   } catch (error) {
     throw new Error(`failed to read config file "${path}": ${error.message}`);
   }
+}
+
+function readFirstConfig(paths) {
+  for (const path of paths) {
+    const file = readConfigFile(path);
+    if (file) {
+      return { file, path };
+    }
+  }
+  return { file: {}, path: null };
 }
 
 function env(name) {
@@ -76,8 +102,9 @@ function normalizeAuthTokens(authTokens) {
   return result;
 }
 
-export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG || DEFAULT_CONFIG_PATH) {
-  const file = readConfigFile(configPath);
+export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG) {
+  const { file, path: resolvedConfigPath } = readFirstConfig(resolveConfigPaths({ explicit: configPath }));
+  configPath = resolvedConfigPath;
 
   // Cloudflare
   const cloudflareApiToken = env('CLOUDFLARE_API_TOKEN') || file.cloudflare?.apiToken || env('CLOUDFLARE_API_KEY');
@@ -139,6 +166,7 @@ export function loadServerConfig(configPath = process.env.TUNNEL_CONFIG || DEFAU
     acme: {
       email: acmeEmail,
       production: toBoolean(env('ACME_PRODUCTION') || file.acme?.production, true),
+      challengeWaitMs: toNumber(env('ACME_CHALLENGE_WAIT_MS') || file.acme?.challengeWaitMs, 5000),
     },
     authToken,
     authTokens,

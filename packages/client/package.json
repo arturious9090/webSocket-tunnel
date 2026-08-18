@@ -4,6 +4,12 @@
   "description": "Local tunnel client that forwards traffic from the public server to a local port",
   "license": "MIT",
   "type": "module",
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18"
+  },
   "bin": {
     "tunnel-client": "./bin/tunnel-client.js"
   },
@@ -27,7 +33,7 @@
     "start": "node bin/tunnel-client.js"
   },
   "dependencies": {
-    "@ws-tunnel/protocol": "0.1.0",
+    "@ws-tunnel/protocol": "^0.1.0",
     "ws": "^8.21.3"
   }
 }

@@ -49,14 +49,26 @@ deploy/systemd/   # примеры systemd-юнитов
 
 ## Установка
 
+### Вариант 1 — из исходников (клон репозитория)
+
 ```bash
+# 1. склонировать репозиторий
+git clone https://github.com/arturious9090/webSocket-tunnel.git
+cd webSocket-tunnel
+
+# 2. установить зависимости всех пакетов (npm workspaces)
 npm install
+
+# 3. запустить
+npm run server   # сервер (VPS)
+npm run client   # клиент (локальная машина)
+
+# или напрямую
+node packages/server/bin/tunnel-server.js
+node packages/client/bin/tunnel-client.js
 ```
 
-Корневой `package.json` использует npm workspaces, поэтому зависимости всех
-пакетов ставятся одной командой.
-
-### Установка через npm
+### Вариант 2 — через npm (готовые пакеты)
 
 ```bash
 npm install -g @arturious/web-socket-tunnel-server @arturious/web-socket-tunnel-client
